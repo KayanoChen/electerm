@@ -25,7 +25,8 @@ export default class Confirms extends React.PureComponent {
       files: props.files || [],
       index: 0,
       transferList: [],
-      transferTree: {}
+      transferTree: {},
+      loading: false
     }
   }
 
@@ -56,7 +57,7 @@ export default class Confirms extends React.PureComponent {
       }, {})
       data.transferTree = tree
     }
-    this.setState(data, cb)
+    this.setState(() => data, cb)
   }
 
   setStateAsync = (props) => {
@@ -320,6 +321,9 @@ export default class Confirms extends React.PureComponent {
     index = up.index
     let {files} = this.state
     let {length} = files
+    this.setStateAsync(() => ({
+      loading: true
+    }))
     while(index < length) {
       let obj = await this.rename(
         undefined,
@@ -329,7 +333,9 @@ export default class Confirms extends React.PureComponent {
       index = obj.index
     }
     await this.setStateAsync({
-      currentFile, index
+      currentFile,
+      index,
+      loading: false
     })
   }
 
@@ -337,6 +343,9 @@ export default class Confirms extends React.PureComponent {
     let {currentFile, index} = this.state
     let {isDirectory} = currentFile
     let transferList = copy(this.state.transferList)
+    this.setStateAsync(() => ({
+      loading: true
+    }))
     if (!isDirectory) {
       transferList.push(this.createTransfer(currentFile))
       await this.setStateAsync({
@@ -344,7 +353,10 @@ export default class Confirms extends React.PureComponent {
       })
     }
     let update = await this.getNextIndex(index)
-    this.setStateAsync(update)
+    this.setStateAsync({
+      update,
+      loading: false
+    })
   }
 
   mergeOrOverwriteAll = async () => {
@@ -352,6 +364,9 @@ export default class Confirms extends React.PureComponent {
     let i = index
     let transferList = copy(this.state.transferList)
     let len = files.length
+    this.setStateAsync(() => ({
+      loading: true
+    }))
     for(;i < len;i ++) {
       let f = files[i]
       let {isDirectory} = f
@@ -365,6 +380,7 @@ export default class Confirms extends React.PureComponent {
     }
     this.setStateProxy({
       currentFile: null,
+      loading: false,
       index: files.length + 1,
       transferList
     })
@@ -408,7 +424,7 @@ export default class Confirms extends React.PureComponent {
   }
 
   renderFooter() {
-    let {currentFile, index, files} = this.state
+    let {currentFile, index, files, loading} = this.state
     if (!currentFile) {
       return null
     }
@@ -420,6 +436,7 @@ export default class Confirms extends React.PureComponent {
           type="ghost"
           className="mg1l"
           onClick={this.cancel}
+          loading={loading}
         >
           {e('cancel')}
         </Button>
@@ -427,12 +444,14 @@ export default class Confirms extends React.PureComponent {
           type="ghost"
           className="mg1l"
           onClick={this.skip}
+          loading={loading}
         >
           {e('skip')}
         </Button>
         <Button
           type="primary"
           className="mg1l"
+          loading={loading}
           onClick={
             this.mergeOrOverwrite
           }
@@ -442,6 +461,7 @@ export default class Confirms extends React.PureComponent {
         <Button
           type="primary"
           className="mg1l"
+          loading={loading}
           onClick={
             this.rename
           }
@@ -455,6 +475,7 @@ export default class Confirms extends React.PureComponent {
               <Button
                 type="ghost"
                 className="mg1l"
+                loading={loading}
                 title={
                   isDirectory
                     ? e('mergeDesc')
@@ -476,6 +497,7 @@ export default class Confirms extends React.PureComponent {
                 type="primary"
                 className="mg1l"
                 title={e('renameDesc')}
+                loading={loading}
                 onClick={
                   this.renameAll
                 }
